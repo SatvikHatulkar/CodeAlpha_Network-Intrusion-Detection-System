@@ -1,0 +1,43 @@
+# ICMP DETECTION
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"ICMP Detection"; sid:1000001; rev:1;)
+
+#Buffer Overflow testing except port 80
+alert tcp $EXTERNAL_NET any -> $HOME_NET !80 (msg:"Buffer Overflow Detected"; content:"AAAA", nocase; sid:1000002;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET !80 (msg:"Possible Buffer Overflow - Repeated A"; pcre:"/(A){50,}/i"; sid:1000003; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET !80 (msg:"Possible Buffer Overflow Repeated AB - Regex"; pcre:"/(AB){10,}/i"; sid:1000004; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET !80 (msg:"Shellcode NOP sleds"; content:"|90 90 90 90|"; sid:1000012; rev:1;)
+
+#Bruteforce Detection
+#alert tcp $EXTERNAL_NET any -> $HOME_NET 22 (msg:"SSH Bruteforce Attempt"; flow:to_server,established; detection_filter:track by_src, count 5, seconds 1; sid:10000013; rev:1;)
+alert tcp any any -> any 22 (msg:"Possible SSH Brute Force - 30 attempts in 1 seconds"; flow:to_server,established; content:"SSH-2.0-"; pcre:"/SSH-2\.0-.*/"; detection_filter: track by_src, count 1000, seconds 1; classtype:attempted-recon; sid:2000001; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 25 (msg:"SMTP Bruteforce Attempt"; flow:to_server,established; detection_filter:track by_src, count 5, seconds 1; sid:10000014; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"FTP Bruteforce Attempt"; flow:to_server,established; detection_filter:track by_src, count 5, seconds 1; sid:10000015; rev:1;)
+
+#C2 Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible C2 Detected"; content:"botnet"; sid:1000016; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"Possible HTTP C2 - Generic Base64 in Raw URI"; http_uri; pcre:"/[a-zA-Z0-9+\/]{20,}/i"; sid:1000017; rev:4;)
+alert udp $EXTERNAL_NET any -> $HOME_NET 53 (msg:"Possible DNS Tunneling - Long Query"; pcre:"/[a-zA-Z0-9]{40,}\.|\..*\./"; sid:1000018; rev:1;)
+alert udp $EXTERNAL_NET any -> $HOME_NET 53 (msg:"Generic DNS Query Observed"; sid:1000019; rev:1;)
+alert icmp $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible ICMP Tunnel - Large Payload"; itype:8; dsize:>100; sid:1000051; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 443 (msg:"Possible C2 Reasoning to HTTPS"; flags:S; detection_filter:track by_src, count 10, seconds 60; sid:1000020; rev:1;)
+
+#Injection Detection
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"SQL Injection Detected - or 1=1"; content:"or 1=1", nocase; flow:to_server,established; sid:10000021; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET !22 (msg:"General SQL Injection Detected"; pcre:"/((\%27)|(\')|(\-\-)|(\%3b)|(:)|(\#)|(\%23)|(\*)|(\/))/i"; flow:to_server,established; sid:10000022; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"WEB-SQL Injection Detected - Suspicious Chars in URI"; flow:to_server,established; http_uri; pcre:"/((%27)|(')|(--)|(%3b)|(:)|(#)|(/\*)|(\*))/i"; sid:10000023; rev:2;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible SQL Injection - Generic Keywords"; flow:to_server,established; pcre:"/(select|union|and|or|concat|benchmark|sleep|substring|insert|load_file|outfile|update|xp_cmdshell|exec)/i"; sid:10000024; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"WEB-Possible SQL Injection - Generic Keywords"; flow:to_server,established; http_uri; pcre:"/(select|union|and|or|concat|benchmark|sleep|substring|insert|load_file|outfile|update|xp_cmdshell|exec)/i"; sid:10000024; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"XSS Attempt - Event Handler with Malicious Function"; flow:to_server,established; http_uri; pcre:"/(on(abort|blur|change|click|dblclick|error|focus|hashchange|keydown|keypress|keyup|load|message|mousedown|mousemove|mouseout|mouseover|mouseup|mousewheel|offline|online|pagehide|pageshow|paste|resize|scroll|select|storage|submit|unload|wheel))\s*=\s*['"]?([^'"]*?(alert|prompt|confirm|eval|document\.cookie|window\.location|data:text\/html))/is"; sid:10000025; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"XSS Attempt - Javascript Pseudo-Protocol URI"; flow:to_server,established; http_uri; content:"javascript:", nocase; pcre:"/javascript:\s*(alert|prompt|confirm|eval|document\.cookie|window\.location|data:text\/html)/i"; sid:10000026; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"XSS Attempt - Data URI Injection"; flow:to_server,established; http_uri; pcre:"/(alert|fetch|eval|function|document)/i"; sid:10000027; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"BASIC - OS Command Attempt"; flow:to_server,established; http_uri; pcre:"/(whoami|id|cat|ls|dir|cmd|sh|bash)/i"; sid:10000028; rev:1;)
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"BASIC - OS Command Attempt"; flow:to_server,established; pcre:"/(whoami|id|cat|ls|dir|cmd|bash)/i"; sid:10000029; rev:1;)
+
+#Additional 
+alert tcp $EXTERNAL_NET any -> $HOME_NET any (msg:"ATTACK-RESPONSES directory listing"; content:"Volume Serial Number"; classtype:bad-unknown; sid:1000005; rev:1;)
+alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"ATTACK-RESPONSES command completed"; flow:to_server,established; content:"Command completed", nocase; reference:bugtraq,1806; classtype:bad-unknown; sid:1000006; rev:10;)
+alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"ATTACK-RESPONSES command error"; flow:to_server,established; content:"Bad command or filename", nocase; classtype:bad-unknown; sid:1000007; rev:8;)
+alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"ATTACK-RESPONSES file copied ok"; flow:to_server,established; content:"1 file|28|s|29| copied", nocase; reference:bugtraq,1806; reference:cve,2000-0884; classtype:bad-unknown; sid:1000008; rev:12;)
+alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"ATTACK-RESPONSES Invalid URL"; flow:from_server,established; content:"Invalid URL", nocase; reference:url,www.microsoft.com/technet/security/bulletin/MS00-063.mspx; classtype:attempted-recon; sid:1000009; rev:10;)
+alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"ATTACK-RESPONSES index of /cgi-bin/ response"; flow:from_server,established; content:"Index of /cgi-bin/", nocase; reference:nessus,10039; classtype:bad-unknown; sid:10000010; rev:5;)
+alert tcp $HOME_NET any -> $EXTERNAL_NET any (msg:"ATTACK-RESPONSES 403 Forbidden"; flow:from_server,established; content:"HTTP/1.1 403", depth 12; classtype:attempted-recon; sid:10000011; rev:7;)
