@@ -29,8 +29,8 @@ This repository includes:
 Follow these commands to **clone and set up this NIDS project** on your own machine:
 
 ```bash
-git clone https://github.com/SatvikHatulkar/CodeAlpha_NIDS.git
-cd CodeAlpha_NIDS
+git clone https://github.com/SatvikHatulkar/CodeAlpha_Network-Intrusion-Detection-System.git
+cd CodeAlpha_Network-Intrusion-Detection-System
 chmod +x setup.sh
 ./setup.sh
 ```
