@@ -18,7 +18,7 @@ This repository includes:
 ## ⚡ Key Features
 
 1. **Snort Installation:** Step-by-step instructions to install Snort on a Linux-based system.
-2. **Configuration:** How to properly configure `snort.conf` and include custom rule files.
+2. **Configuration:** How to properly configure `snort.lua` and include custom rule files.
 3. **Custom Rules:** Example rules for detecting suspicious activities.
 4. **Testing:** Guidelines on how to test and verify that Snort detects and logs threats as expected.
 
